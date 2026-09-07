@@ -1,36 +1,60 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Chess — frontend
 
-## Getting Started
+Next.js frontend for a hotseat chess game. The NestJS backend in `../backend` owns
+all game state; this app renders it.
 
-First, run the development server:
+See `CLAUDE.md` for architecture and conventions.
+
+## Setup
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+corepack enable
+pnpm install
+cp .env.example .env.local
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+`pnpm install` runs `openapi:generate`, which builds `src/lib/api/schema.d.ts` from
+the committed `openapi.json`. That file is gitignored and rebuilt on every install.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Running
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The backend runs on `3000`, this app on `3001`.
 
-## Learn More
+```bash
+pnpm dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Commands
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Command                 | Does                                           |
+| ----------------------- | ---------------------------------------------- |
+| `pnpm dev`              | Dev server on port 3001                        |
+| `pnpm build`            | Production build                               |
+| `pnpm test`             | Run the Vitest suite once                      |
+| `pnpm test:watch`       | Watch mode                                     |
+| `pnpm test:cov`         | Coverage report                                |
+| `pnpm lint`             | ESLint, including the full `jsx-a11y` rule set |
+| `pnpm typecheck`        | `tsc --noEmit`                                 |
+| `pnpm format`           | Prettier write                                 |
+| `pnpm openapi:sync`     | Pull `openapi.json` from the backend           |
+| `pnpm openapi:generate` | Regenerate API types from `openapi.json`       |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## API types
 
-## Deploy on Vercel
+`openapi.json` is fetched, never hand-edited. `pnpm openapi:sync` pulls it from
+`${OPENAPI_SOURCE_URL}/api-docs-json` (defaults to `http://localhost:3000`), so the
+backend must be running. The spec is committed, so Vercel builds never depend on the
+backend being up.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Request and response shapes come from the generated types only — never hand-write an
+interface describing a backend payload.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Layout
+
+```
+src/app/         routes
+src/components/  UI components (shadcn/ui output is ours to edit)
+src/lib/api/     typed fetch client + generated schema
+src/lib/query/   TanStack Query provider
+tests/           mirrors src/
+```
