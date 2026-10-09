@@ -28,16 +28,6 @@ the backend's `/games` endpoints. No auth, no multiplayer, no engines yet.
   - **It provides no keyboard accessibility.** Drag-and-drop is its default
     interaction. A keyboard-operable move path built on `onSquareClick` /
     `onPieceClick` is our responsibility — see **Accessibility**.
-- **`chess.js` is not a dependency yet.** It arrives only for client-side
-  legal-move highlighting and optimistic rendering, and stays a UX affordance —
-  see **Server is authoritative**.
-- **TanStack Query** owns all server state, **Zustand** owns client state — see **State**
-- Tailwind + shadcn/ui — see **Styling**
-- `openapi-typescript` generates API types from the backend spec — see
-  **API integration**
-- **Vitest** + React Testing Library — see **Testing**
-- pnpm, pinned via Corepack
-- ESLint v9 (pinned — see **Tooling**) + Prettier + `eslint-plugin-jsx-a11y`
 
 ### Decided but NOT yet installed
 
@@ -56,8 +46,10 @@ made — reach for these, not alternatives.
 
 **The backend owns the position. This client renders it.**
 
-- Re-render from the state the server returns. If a move is rejected, snap the
-  piece back and re-render from the server's copy, never from a local guess.
+- Re-render from the state the server returns, never from a local guess. The board is
+  controlled by the server's FEN, so a piece only appears to move once the response
+  lands — a rejected move simply leaves the board untouched, and the reason reaches the
+  player through the live region.
 - `chess.js` may later run client-side for legal-move highlighting and optimistic
   rendering. That is **a UX affordance only** — it never becomes the source of
   truth, and it must never be the thing that decides whether a move happened.
@@ -88,6 +80,10 @@ made — reach for these, not alternatives.
   server's own response in via `setQueryData`; a rejection invalidates and refetches.
 - Zustand holds only ephemeral UI state — selected square, orientation, announcement
   text. Never mirror server data into the store.
+- **Always select from a store; never call the hook bare.** A bare call subscribes to
+  every field, so one unrelated write re-renders the whole component. Reading a single
+  field inline is fine; two or more go through `useShallow` from `zustand/react/shallow`,
+  so the component takes one subscription instead of one per field.
 - Component state is still fine for state that never leaves one component.
 - Provider is `src/lib/query/provider.tsx`, mounted in the root layout.
 
@@ -100,12 +96,21 @@ Non-negotiable, and the reason this project exists as a portfolio piece.
   reader. Drag-and-drop alone is not sufficient — moves need a keyboard path.
 - Announce state changes (move made, check, game over) via a live region rather
   than visual-only feedback.
-- **Never suppress an a11y rule to make a build pass.** Fix the markup, or ask.
+- **One live region per independent stream of announcements.** A polite region whose
+  text is replaced before it has been read simply never speaks it, so two writers on one
+  region silently lose messages.
+- **Never suppress an a11y rule to make a build pass.** Fix the markup, or ask. Where a
+  shadcn primitive is a generic passthrough and cannot carry the association itself,
+  register it under `settings['jsx-a11y']` in `eslint.config.mjs` so the rule checks the
+  call sites instead.
 
 ## Styling
 
 - Tailwind. shadcn/ui for components — installed via its CLI, which copies source
   into the repo. Those files are ours; edit them directly.
+- **Fix up what the CLI emits before committing it.** Every `shadcn add` writes
+  `import { cn } from "cn"` and installs an unrelated `cn` package to match — repoint
+  those to `@/lib/utils` and `pnpm remove cn`.
 - **Mobile-responsive is a requirement, not a later pass.** The board must be
   usable on a phone.
 
@@ -123,8 +128,10 @@ Non-negotiable, and the reason this project exists as a portfolio piece.
 
 ## Commands
 
-Commands are in package.json. Always run lint and tests before reporting a task
-complete. Never run watch-mode scripts.
+Commands are in package.json. Never run watch-mode scripts.
+
+Before reporting a task complete, run everything CI gates on, not just some of it:
+`pnpm lint`, `pnpm format:check`, `pnpm typecheck`, `pnpm test`.
 
 ## Testing
 
