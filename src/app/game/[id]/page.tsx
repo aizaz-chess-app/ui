@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ApiError } from '@/lib/api/client';
-import { useCreateGame, useGame } from '@/lib/query/games';
+import { useGame } from '@/lib/query/games';
+import { useRouter } from 'next/navigation';
 import { use } from 'react';
 
 export default function GamePage({ params }: PageProps<'/game/[id]'>) {
@@ -45,7 +46,7 @@ function GamePageSkeleton() {
 }
 
 function UnavailableGame({ title, description }: { title: string; description: string }) {
-  const createGame = useCreateGame();
+  const router = useRouter();
 
   return (
     <main className="flex flex-1 items-center justify-center p-6">
@@ -55,9 +56,8 @@ function UnavailableGame({ title, description }: { title: string; description: s
           <CardDescription>{description}</CardDescription>
         </CardHeader>
         <CardContent>
-          <Button onClick={() => createGame.mutate()} disabled={createGame.isPending}>
-            {createGame.isPending ? 'Starting…' : 'New game'}
-          </Button>
+          {/* Back to the picker rather than straight into a game, so the time control is a choice. */}
+          <Button onClick={() => router.push('/')}>New game</Button>
         </CardContent>
       </Card>
     </main>

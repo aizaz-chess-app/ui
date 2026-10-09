@@ -16,6 +16,16 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "The payload failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponseDto"
+                }
+              }
+            }
           }
         },
         "summary": "Liveness probe",
@@ -26,9 +36,19 @@
     },
     "/games": {
       "post": {
-        "description": "Creates a hotseat game at the standard starting position.",
+        "description": "Creates a hotseat game at the standard starting position. Both clocks start immediately when a time control is given.",
         "operationId": "createGame",
         "parameters": [],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateGameDto"
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
             "description": "",
@@ -36,6 +56,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/GameStateDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The payload failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponseDto"
                 }
               }
             }
@@ -69,6 +99,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/GameStateDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The payload failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponseDto"
                 }
               }
             }
@@ -199,7 +239,7 @@
             }
           },
           "400": {
-            "description": "The `square` query parameter is not a square.",
+            "description": "The payload failed validation.",
             "content": {
               "application/json": {
                 "schema": {
@@ -263,7 +303,7 @@
             }
           },
           "400": {
-            "description": "`color` is not `w` or `b`.",
+            "description": "The payload failed validation.",
             "content": {
               "application/json": {
                 "schema": {
@@ -326,6 +366,16 @@
               }
             }
           },
+          "400": {
+            "description": "The payload failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponseDto"
+                }
+              }
+            }
+          },
           "404": {
             "description": "No game found with this id.",
             "content": {
@@ -373,6 +423,31 @@
   ],
   "components": {
     "schemas": {
+      "ValidationErrorResponseDto": {
+        "type": "object",
+        "properties": {
+          "statusCode": {
+            "type": "number",
+            "example": 400
+          },
+          "message": {
+            "description": "One entry per failed constraint.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "error": {
+            "type": "string",
+            "example": "Bad Request"
+          }
+        },
+        "required": [
+          "statusCode",
+          "message",
+          "error"
+        ]
+      },
       "HealthResponseDto": {
         "type": "object",
         "properties": {
@@ -384,6 +459,42 @@
         "required": [
           "status"
         ]
+      },
+      "TimeControlDto": {
+        "type": "object",
+        "properties": {
+          "initialSeconds": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 10800,
+            "example": 300,
+            "description": "Starting time per side, in seconds."
+          },
+          "incrementSeconds": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 180,
+            "example": 3,
+            "description": "Seconds added to the mover clock after each move."
+          }
+        },
+        "required": [
+          "initialSeconds",
+          "incrementSeconds"
+        ]
+      },
+      "CreateGameDto": {
+        "type": "object",
+        "properties": {
+          "timeControl": {
+            "description": "Omit for an untimed game.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TimeControlDto"
+              }
+            ]
+          }
+        }
       },
       "PlayerColor": {
         "type": "string",
@@ -400,7 +511,8 @@
           "checkmate",
           "stalemate",
           "draw",
-          "resigned"
+          "resigned",
+          "timeout"
         ]
       },
       "GameResult": {
@@ -584,6 +696,31 @@
           "color"
         ]
       },
+      "ClockDto": {
+        "type": "object",
+        "properties": {
+          "whiteMs": {
+            "type": "number",
+            "description": "Milliseconds left on the White clock, interpolated to serverTime.",
+            "example": 284310
+          },
+          "blackMs": {
+            "type": "number",
+            "description": "Milliseconds left on the Black clock, interpolated to serverTime.",
+            "example": 297000
+          },
+          "serverTime": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When these values were computed; subtract round-trip latency to sync a local countdown."
+          }
+        },
+        "required": [
+          "whiteMs",
+          "blackMs",
+          "serverTime"
+        ]
+      },
       "GameStateDto": {
         "type": "object",
         "properties": {
@@ -651,6 +788,26 @@
               "$ref": "#/components/schemas/MoveDto"
             }
           },
+          "timeControl": {
+            "nullable": true,
+            "description": "Null for an untimed game.",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TimeControlDto"
+              }
+            ]
+          },
+          "clock": {
+            "nullable": true,
+            "description": "Null for an untimed game. Frozen at the values the game ended on.",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ClockDto"
+              }
+            ]
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
@@ -671,6 +828,8 @@
           "result",
           "drawReason",
           "history",
+          "timeControl",
+          "clock",
           "createdAt",
           "updatedAt"
         ]
@@ -730,31 +889,6 @@
         "required": [
           "from",
           "to"
-        ]
-      },
-      "ValidationErrorResponseDto": {
-        "type": "object",
-        "properties": {
-          "statusCode": {
-            "type": "number",
-            "example": 400
-          },
-          "message": {
-            "description": "One entry per failed constraint.",
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "error": {
-            "type": "string",
-            "example": "Bad Request"
-          }
-        },
-        "required": [
-          "statusCode",
-          "message",
-          "error"
         ]
       },
       "ErrorResponseDto": {

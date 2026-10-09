@@ -3,14 +3,16 @@
 import { GameBoard } from '@/components/game/game-board';
 import { GameOverDialog } from '@/components/game/game-over-dialog';
 import { GamePanel } from '@/components/game/game-panel';
-import { MoveAnnouncer } from '@/components/game/move-announcer';
+import { ClockAnnouncer, MoveAnnouncer } from '@/components/game/game-announcers';
 import { PromotionDialog } from '@/components/game/promotion-dialog';
 import { isGameOver, type GameState, type PromotionPiece, type Square } from '@/lib/api/games';
 import { colorName } from '@/lib/chess/board';
 import { describeOutcome } from '@/lib/chess/outcome';
 import { useAgreeDraw, useCreateGame, useMakeMove, useResign } from '@/lib/query/games';
 import { useGameUiStore } from '@/lib/store/game-ui';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 
 type PendingPromotion = { from: Square; to: Square };
 
@@ -19,8 +21,10 @@ export function GameView({ game }: { game: GameState }) {
   const resign = useResign(game.id);
   const agreeDraw = useAgreeDraw(game.id);
   const createGame = useCreateGame();
+  const router = useRouter();
 
-  const { announce, reset, selectSquare } = useGameUiStore();
+  // Only actions, whose identities never change — so store writes no longer re-render this tree.
+  const { announce, reset, selectSquare } = useGameUiStore(useShallow(state => ({ announce: state.announce, reset: state.reset, selectSquare: state.selectSquare })));
   const [pendingPromotion, setPendingPromotion] = useState<PendingPromotion | null>(null);
   const [isReviewing, setIsReviewing] = useState(false);
 
@@ -45,6 +49,7 @@ export function GameView({ game }: { game: GameState }) {
   return (
     <div className="flex w-full flex-col items-center gap-6 lg:flex-row lg:items-start lg:justify-center">
       <MoveAnnouncer />
+      <ClockAnnouncer />
       <GameBoard game={game} onMove={submitMove} onPromotionRequired={setPendingPromotion} />
       <GamePanel game={game} isBusy={isBusy} onResign={() => resign.mutate(game.turn)} onAgreeDraw={() => agreeDraw.mutate()} />
 
@@ -64,7 +69,8 @@ export function GameView({ game }: { game: GameState }) {
         open={gameOver && !isReviewing}
         isStartingNewGame={createGame.isPending}
         onReview={() => setIsReviewing(true)}
-        onNewGame={() => createGame.mutate()}
+        onRematch={() => createGame.mutate(game.timeControl ? { timeControl: game.timeControl } : undefined)}
+        onChangeTimeControl={() => router.push('/')}
       />
     </div>
   );

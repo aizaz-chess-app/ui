@@ -4,6 +4,9 @@ import type { components } from '@/lib/api/schema';
 export type GameState = components['schemas']['GameStateDto'];
 export type Move = components['schemas']['MoveDto'];
 export type MakeMoveBody = components['schemas']['MakeMoveDto'];
+export type CreateGameBody = components['schemas']['CreateGameDto'];
+export type TimeControl = components['schemas']['TimeControlDto'];
+export type Clock = components['schemas']['ClockDto'];
 export type Square = components['schemas']['Square'];
 export type PlayerColor = components['schemas']['PlayerColor'];
 export type GameStatus = components['schemas']['GameStatus'];
@@ -12,8 +15,8 @@ export type DrawReason = components['schemas']['DrawReason'];
 export type PieceType = components['schemas']['PieceType'];
 export type PromotionPiece = components['schemas']['PromotionPiece'];
 
-export function createGame(): Promise<GameState> {
-  return apiRequest<GameState>('/games', { method: 'POST' });
+export function createGame(body?: CreateGameBody): Promise<GameState> {
+  return apiRequest<GameState>('/games', { method: 'POST', ...(body && { body: JSON.stringify(body) }) });
 }
 
 export function getGame(id: string): Promise<GameState> {

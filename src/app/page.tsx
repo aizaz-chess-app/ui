@@ -1,11 +1,16 @@
 'use client';
 
+import { TimeControlPicker } from '@/components/game/time-control-picker';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import type { TimeControl } from '@/lib/api/games';
 import { useCreateGame } from '@/lib/query/games';
+import { useState } from 'react';
 
 export default function HomePage() {
   const createGame = useCreateGame();
+  const [timeControl, setTimeControl] = useState<TimeControl | null>(null);
+  const [isValid, setIsValid] = useState(true);
 
   return (
     <main className="flex flex-1 items-center justify-center p-6">
@@ -14,8 +19,10 @@ export default function HomePage() {
           <CardTitle>Chess</CardTitle>
           <CardDescription>Two players, one board, taking turns on this device.</CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col gap-3">
-          <Button size="lg" onClick={() => createGame.mutate()} disabled={createGame.isPending}>
+        <CardContent className="flex flex-col gap-5">
+          <TimeControlPicker onChange={setTimeControl} onValidityChange={setIsValid} />
+
+          <Button size="lg" onClick={() => createGame.mutate(timeControl ? { timeControl } : undefined)} disabled={createGame.isPending || !isValid}>
             {createGame.isPending ? 'Starting…' : 'Play on same device'}
           </Button>
           {createGame.isError && (

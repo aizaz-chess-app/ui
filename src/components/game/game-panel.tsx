@@ -1,5 +1,6 @@
 'use client';
 
+import { GameClocks } from '@/components/game/game-clocks';
 import { MoveList } from '@/components/game/move-list';
 import {
   AlertDialog,
@@ -19,14 +20,16 @@ import { Separator } from '@/components/ui/separator';
 import type { GameState } from '@/lib/api/games';
 import { isGameOver } from '@/lib/api/games';
 import { colorName } from '@/lib/chess/board';
+import { describeTimeControl } from '@/lib/chess/clock';
 import { describeOutcome } from '@/lib/chess/outcome';
 import { useGameUiStore } from '@/lib/store/game-ui';
 import type { ReactElement } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 
 type GamePanelProps = { game: GameState; isBusy: boolean; onResign: () => void; onAgreeDraw: () => void };
 
 export function GamePanel({ game, isBusy, onResign, onAgreeDraw }: GamePanelProps) {
-  const { orientation, flipOrientation } = useGameUiStore();
+  const { orientation, flipOrientation } = useGameUiStore(useShallow(state => ({ orientation: state.orientation, flipOrientation: state.flipOrientation })));
   const gameOver = isGameOver(game);
 
   return (
@@ -35,9 +38,11 @@ export function GamePanel({ game, isBusy, onResign, onAgreeDraw }: GamePanelProp
         <CardTitle className="flex items-center justify-between gap-2">
           <span>{gameOver ? describeOutcome(game) : `${colorName(game.turn)} to move`}</span>
           {game.inCheck && !gameOver && <Badge variant="destructive">Check</Badge>}
+          {game.timeControl && <Badge variant="outline">{describeTimeControl(game.timeControl)}</Badge>}
         </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
+        {game.clock && <GameClocks game={game} />}
         <MoveList history={game.history} />
         <Separator />
         <div className="flex flex-wrap gap-2">

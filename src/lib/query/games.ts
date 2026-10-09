@@ -1,6 +1,6 @@
 'use client';
 
-import { agreeDraw, createGame, getGame, makeMove, resign, type GameState, type MakeMoveBody, type PlayerColor } from '@/lib/api/games';
+import { agreeDraw, createGame, getGame, makeMove, resign, type CreateGameBody, type GameState, type MakeMoveBody, type PlayerColor } from '@/lib/api/games';
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 
@@ -40,7 +40,7 @@ export function useCreateGame() {
   const router = useRouter();
 
   return useMutation({
-    mutationFn: createGame,
+    mutationFn: (body?: CreateGameBody) => createGame(body),
     onSuccess: game => {
       queryClient.setQueryData(gameKeys.detail(game.id), game);
       router.push(`/game/${game.id}`);

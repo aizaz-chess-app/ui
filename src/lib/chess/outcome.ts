@@ -20,6 +20,10 @@ export function describeOutcome(game: GameState): string {
       return `${winner ?? colorName(game.turn)} wins by checkmate`;
     case 'resigned':
       return `${winner ?? colorName(game.turn)} wins by resignation`;
+    // A flag only loses if the other side could still mate, so this can score as a draw — and the
+    // reason is read off the payload rather than assumed, the same as the `draw` case below.
+    case 'timeout':
+      return winner ? `${winner} wins on time` : `Draw on time ${game.drawReason ? DRAW_REASONS[game.drawReason] : ''}`.trim();
     case 'stalemate':
       return 'Draw by stalemate';
     case 'draw':

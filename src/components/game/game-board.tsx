@@ -7,6 +7,7 @@ import { isArrowKey, isPieceOf, isPromotionMove, positionFromFen, squareAtEdge, 
 import { useGameUiStore } from '@/lib/store/game-ui';
 import { useCallback, useEffect, useMemo, useRef, type KeyboardEvent } from 'react';
 import { Chessboard, type PieceDropHandlerArgs, type SquareHandlerArgs } from 'react-chessboard';
+import { useShallow } from 'zustand/react/shallow';
 
 type GameBoardProps = {
   game: GameState;
@@ -15,7 +16,15 @@ type GameBoardProps = {
 };
 
 export function GameBoard({ game, onMove, onPromotionRequired }: GameBoardProps) {
-  const { selectedSquare, focusedSquare, orientation, selectSquare, focusSquare } = useGameUiStore();
+  const { selectedSquare, focusedSquare, orientation, selectSquare, focusSquare } = useGameUiStore(
+    useShallow(state => ({
+      selectedSquare: state.selectedSquare,
+      focusedSquare: state.focusedSquare,
+      orientation: state.orientation,
+      selectSquare: state.selectSquare,
+      focusSquare: state.focusSquare
+    }))
+  );
   const boardRef = useRef<HTMLDivElement>(null);
   const squareRefs = useRef(new Map<Square, HTMLButtonElement>());
 
