@@ -1,7 +1,7 @@
 import { ApiError } from '@/lib/api/client';
 import { agreeDraw, createGame, getGame, isGameOver, makeMove, resign } from '@/lib/api/games';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { gameFixture } from '../../fixtures/game';
+import { gameFixture, timedGameFixture } from '../../fixtures/game';
 
 function mockFetch(status: number, body: unknown) {
   const fetchMock = vi.fn().mockResolvedValue({ ok: status >= 200 && status < 300, status, json: () => Promise.resolve(body) });
@@ -25,6 +25,15 @@ describe('games api', () => {
     await createGame();
 
     expect(lastCall(fetchMock)).toMatchObject({ url: expect.stringContaining('/games'), method: 'POST', body: undefined });
+  });
+
+  it('creates a timed game by sending the time control', async () => {
+    const timeControl = { initialSeconds: 300, incrementSeconds: 3 };
+    const fetchMock = mockFetch(201, timedGameFixture({}, timeControl));
+
+    await createGame({ timeControl });
+
+    expect(lastCall(fetchMock)).toMatchObject({ method: 'POST', body: { timeControl } });
   });
 
   it('reads a game by id', async () => {
@@ -84,5 +93,6 @@ describe('isGameOver', () => {
     expect(isGameOver(gameFixture({ status: 'stalemate' }))).toBe(true);
     expect(isGameOver(gameFixture({ status: 'draw' }))).toBe(true);
     expect(isGameOver(gameFixture({ status: 'resigned' }))).toBe(true);
+    expect(isGameOver(gameFixture({ status: 'timeout' }))).toBe(true);
   });
 });
